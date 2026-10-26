@@ -2,8 +2,9 @@ import numpy as np
 
 
 class Source:
-    def __init__(self, Y):
+    def __init__(self, Y, position):
         self.light_yield = Y
+        self.position = position # из какой точки летят фотоны
 
     def generate_directions(self, energy):
         N = round(self.light_yield * energy)
@@ -14,3 +15,5 @@ class Source:
         normal_vectors = np.array([np.sqrt(1 - u**2)*np.cos(phi), np.sqrt(1 - u**2)*np.sin(phi), u]).transpose()
 
         return normal_vectors
+
+
