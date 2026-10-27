@@ -37,6 +37,16 @@ class Detector:
         cross_points = np.array(start) + t[:, None]*direction
         return cross_points
 
+    def find_cross_point_damp(self, start, direction, lam=8):
+        # Находим точку пересечения со сферой детектора с учетом затухания
+        x, y, z = start
+        nx, ny, nz = direction.T
+        pn = x*nx + y*ny + z*nz
+        t = -pn+ np.sqrt(pn**2 +self.radius**2 - x**2 - y**2 - z**2)
+        cross_points = np.array(start) + t[:, None]*direction
+        cross_photons = np.random.uniform(0, 1, len(cross_points)) # разыгрываем вероятность поглощения на пути
+        return cross_points[cross_photons < np.exp(-t/lam) ] # возвращаем только те фотоны, которые дойдут до детектора
+
     def generate_photo_electrons(self, n):
         # генерация фотоэлектронов по Пуассону. Этот метод принадлежит классу
         # Detector, т.к. именно здесь реализуется моделирование детектора,
