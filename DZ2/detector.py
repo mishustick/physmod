@@ -18,6 +18,30 @@ class Detector:
         self.pm_positions = self.pm_positions.transpose()
 
 
+
+    def find_photomuls_fast(self, point):
+        u_point = point[:, 2] / self.radius # по точке находим ее cos theta in [-1, 1]
+        num_i = ((self.photomultiplier * u_point + self.photomultiplier - 1) // 2).astype(int) # по u восстанавливаем номер потенциального фэу
+        k = int(np.ceil(self.photomultiplier * self.photocathode_r / (2*self.radius)))+1 # так как один пояс покрывается несколькими фэу, то берем Nr/2R потенциальных фэу
+
+        close_indx_phms = np.clip(num_i[:, None] + np.arange(-k, k+1), 0, self.photomultiplier-1) # таблица с номерами потенциальных фэу, прижатая к 0 и N
+        close_phms = self.pm_positions[close_indx_phms] # получили (M, 2k+1, 3) массив, каждый элемент содержит (2k+1, 3) массив с координатами потенциальных фэу
+
+        dist_sq = (close_phms - point[:, None, :])**2
+        dist_sq = np.sum(dist_sq, axis=2) # сворачиваем в сумму квадратов расстояний до фэу
+
+        pms_min = np.argmin(dist_sq, axis=1) # находим относительный номер ближайшего фэу для каждой точки
+        pms_min = np.clip(num_i - k + pms_min, 0, self.photomultiplier-1)
+
+        min_dist_sq = np.min(dist_sq, axis=1)  # находим минимальные расстояния
+
+        hits = min_dist_sq <= self.photocathode_r**2 # составляем маску попаданий для каждой точки
+        return np.where(hits, pms_min, -1)
+
+
+
+
+
     def find_photomultiplier(self, point):
         # вычисление квадрата расстояний от точки до фэу
         distances_squared = (self.pm_positions[:, None, :] - point[None, :, :])**2 # векторная разность точек и фэу
